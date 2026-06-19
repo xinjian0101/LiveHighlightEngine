@@ -1,67 +1,67 @@
 # LiveHighlightEngine
 
-本地优先的直播回放爆点分析与候选片段选择器。项目将音频、弹幕、OCR、关键词等离散信号归一化为时间区间评分，输出可复核、可排序、可继续交给剪辑工具处理的高光候选列表。
+A local-first highlight candidate engine for long live-stream recordings. The project combines normalized audio, audience-reaction, OCR, and keyword signals into reviewable time intervals that can be ranked, inspected, and passed to downstream editing tools.
 
-> 当前定位：轻量 MVP 与算法原型。默认不调用付费 API，不上传原始视频，不直接执行剪辑。
+> Status: lightweight MVP and algorithm prototype. It does not call paid APIs, upload source video, or execute media editing commands.
 
-## 适用场景
+## Use cases
 
-- 4—5 小时直播回放的初步高光筛选
-- 游戏、带货、访谈、赛事等长视频候选片段提取
-- 弹幕峰值、关键词命中与 OCR 文本的联合评分实验
-- 为人工剪辑台提供结构化候选区间
-- 与 ClipBench 配合进行区间算法评测
+- Initial highlight screening for multi-hour live-stream recordings
+- Candidate extraction from gaming, commerce, interviews, sports, and talk content
+- Experiments that combine audience-reaction peaks, keyword hits, OCR changes, and audio intensity
+- Structured candidate delivery to a human editing workstation
+- Regression evaluation with ClipBench
 
-## 当前能力
+## Current capabilities
 
-- 综合 `audio`、`danmaku`、`ocr`、`keyword` 四类信号评分
-- 支持自由文本 `text` 作为审核上下文
-- 合并相邻或重叠候选片段，减少重复结果
-- 使用阈值过滤低置信区间
-- 按综合得分排序并限制输出数量
-- 输出包含时间、得分、触发原因和文本摘要的 JSON
-- 全流程可在本地运行，无需付费 API
+- Weighted scoring across `audio`, `danmaku`, `ocr`, and `keyword` signals
+- Optional `text` context for human review
+- Merging of adjacent or overlapping candidate intervals
+- Threshold-based filtering
+- Score-based ranking with a configurable result limit
+- JSON output containing timing, score, trigger reasons, and context
+- Fully local execution with no mandatory third-party dependency
 
-## 快速开始
+## Quick start
 
-### 环境
+### Requirements
 
-- Python 3.10 或更高版本
-- 无强制第三方依赖
+- Python 3.10 or newer
+- No mandatory third-party package
 
-### 运行
+### Run
 
 ```bash
 python main.py examples/events.jsonl --threshold 0.45 --top 10 -o highlights.json
 ```
 
-### 测试
+### Test
 
 ```bash
 python -m unittest -v
 ```
 
-## 输入格式
+## Input format
 
-输入文件采用 JSONL：每行一个事件或候选时间窗。
+The input is JSONL: one event or candidate window per line.
 
-| 字段 | 类型 | 必填 | 说明 |
+| Field | Type | Required | Description |
 |---|---|---:|---|
-| `start` | number | 是 | 区间开始时间，单位为秒 |
-| `end` | number | 是 | 区间结束时间，单位为秒 |
-| `audio` | number | 否 | 音频强度或情绪信号，建议归一化到 0—1 |
-| `danmaku` | number | 否 | 弹幕密度或峰值信号，建议归一化到 0—1 |
-| `ocr` | number | 否 | OCR 文字命中信号，建议归一化到 0—1 |
-| `keyword` | number | 否 | 关键词命中信号，建议归一化到 0—1 |
-| `text` | string | 否 | 用于人工审核的上下文摘要 |
+| `start` | number | yes | interval start in seconds |
+| `end` | number | yes | interval end in seconds |
+| `audio` | number | no | normalized audio intensity or reaction signal |
+| `danmaku` | number | no | normalized audience-message density signal |
+| `ocr` | number | no | normalized OCR event signal |
+| `keyword` | number | no | normalized keyword-match signal |
+| `text` | string | no | short context used during human review |
 
-示例：
+Example:
 
 ```json
-{"start":12.0,"end":25.0,"audio":0.62,"danmaku":0.91,"ocr":0.35,"keyword":0.80,"text":"关键反转后观众集中反应"}
+{"start":12.0,"end":25.0,"audio":0.62,"danmaku":0.91,"ocr":0.35,"keyword":0.80,"text":"Audience reaction after a key turning point"}
 ```
 
-## 输出示例
+## Output example
 
 ```json
 [
@@ -70,48 +70,51 @@ python -m unittest -v
     "end": 25.0,
     "score": 0.84,
     "reasons": ["danmaku", "keyword"],
-    "text": "关键反转后观众集中反应"
+    "text": "Audience reaction after a key turning point"
   }
 ]
 ```
 
-输出结果是候选区间，不等同于最终成片。建议在导出前人工确认上下文完整性、版权风险、音画连续性与平台规范。
+The output is a candidate list, not a finished edit. Review context, rights, privacy, continuity, and platform requirements before publishing.
 
-## 推荐工作流
+## Recommended workflow
 
-1. 从视频、弹幕或识别模块生成统一时间窗事件。
-2. 将各信号归一化到一致范围。
-3. 使用固定配置运行候选评分。
-4. 检查高分片段是否存在重复、断句或缺少前因后果。
-5. 将确认后的区间交给 FFmpeg 或剪辑台导出。
-6. 使用 ClipBench 对预测区间和人工真值进行回归评测。
+1. Generate time-window events from media, chat, transcript, or OCR modules.
+2. Normalize signals to a consistent range.
+3. Run scoring with a versioned configuration.
+4. Review duplicates, incomplete context, and false peaks.
+5. Pass approved intervals to an editor or a FlowFFmpeg workflow.
+6. Evaluate predictions against reviewed ground truth with ClipBench.
 
-## 设计原则
+## Design principles
 
-- **本地优先**：原始内容不必上传第三方服务。
-- **可解释**：结果保留触发信号和文本上下文。
-- **可复现**：固定输入、阈值和版本应得到稳定结果。
-- **可组合**：只负责候选选择，不绑定具体播放器或剪辑器。
-- **人工可控**：算法负责缩小范围，最终发布决策由人工完成。
+- **Local first**: source media does not need to leave the machine.
+- **Explainable**: results retain trigger signals and review context.
+- **Reproducible**: fixed input and configuration should produce stable output.
+- **Composable**: candidate selection is separate from playback and editing.
+- **Human controlled**: the engine narrows the search space; people make publication decisions.
 
-## 已知限制
+## Known limitations
 
-- 当前评分模型是规则型融合，不代表经过大规模数据训练的通用模型。
-- 输入信号质量会直接影响结果；错误 OCR 或弹幕噪声可能制造伪峰值。
-- 不自动判断版权、隐私、事实准确性或平台内容政策。
-- 不直接读取视频，也不自动执行 FFmpeg。
-- 长视频应采用分段预处理，避免一次性加载过大的事件文件。
+- The scoring model is rule-based rather than a generally trained model.
+- Poor input signals can create false peaks.
+- The tool does not assess copyright, privacy, factual accuracy, or platform policy.
+- It does not read raw video or execute FFmpeg.
+- Very large recordings should use segmented preprocessing.
 
-## 文档
+## Documentation
 
+- [Architecture](docs/ARCHITECTURE.md)
+- [Scoring Guide](docs/SCORING_GUIDE.md)
 - [Benchmark Integration](docs/BENCHMARK_INTEGRATION.md)
-- [Project Roadmap](docs/PROJECT_ROADMAP.md)
+- [Error Handling](docs/ERROR_HANDLING.md)
+- [Contribution Guide](CONTRIBUTING.md)
 - [Maintenance Trace](MAINTENANCE_TRACE.md)
 
-## 关联项目
+## Related projects
 
-- **ClipBench**：评测高光区间的 Precision、Recall、F1、IoU 与边界误差。
-- **FlowFFmpeg**：将审核通过的媒体工作流编译为可检查的 FFmpeg 命令。
+- **ClipBench** evaluates temporal predictions with precision, recall, F1, IoU, and boundary error.
+- **FlowFFmpeg** compiles approved media workflows into inspectable FFmpeg commands.
 
 ## License
 
