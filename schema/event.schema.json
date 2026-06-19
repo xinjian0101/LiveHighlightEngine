@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LiveHighlightEngine Event",
+  "type": "object",
+  "required": ["start", "end"],
+  "properties": {
+    "start": {"type": "number", "minimum": 0},
+    "end": {"type": "number", "exclusiveMinimum": 0},
+    "audio": {"type": "number"},
+    "danmaku": {"type": "number"},
+    "ocr": {"type": "number"},
+    "keyword": {"type": "number"},
+    "text": {"type": "string"},
+    "source_id": {"type": "string"},
+    "metadata": {"type": "object"}
+  },
+  "additionalProperties": true
+}
