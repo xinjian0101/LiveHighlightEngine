@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "profile_id": "review-wide-v1",
+  "description": "Exploratory profile for a wider manual review queue.",
+  "weights": {
+    "audio": 0.20,
+    "danmaku": 0.30,
+    "ocr": 0.20,
+    "keyword": 0.30
+  },
+  "selection": {
+    "threshold": 0.32,
+    "merge_gap_seconds": 7.0,
+    "max_results": 30,
+    "minimum_duration_seconds": 1.0,
+    "maximum_duration_seconds": 240.0
+  },
+  "review_policy": {
+    "manual_review_required": true,
+    "minimum_signal_agreement": 1,
+    "notes": "Use for evaluation rather than automatic publishing."
+  }
+}
