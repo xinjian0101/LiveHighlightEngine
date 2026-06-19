@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "weights": {
+    "audio": 0.25,
+    "danmaku": 0.35,
+    "ocr": 0.15,
+    "keyword": 0.25
+  },
+  "selection": {
+    "threshold": 0.45,
+    "merge_gap_seconds": 5.0,
+    "max_results": 10,
+    "minimum_duration_seconds": 1.0,
+    "maximum_duration_seconds": 180.0
+  },
+  "normalization": {
+    "minimum": 0.0,
+    "maximum": 1.0,
+    "missing_signal_value": 0.0
+  },
+  "output": {
+    "format": "json",
+    "include_reasons": true,
+    "include_source_text": true,
+    "sort": "score_descending"
+  }
+}
