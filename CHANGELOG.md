@@ -6,26 +6,28 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- Versioned scoring-profile loading through `--config`.
+- Configurable weights, selection threshold, merge gap, result limit, and reason threshold.
+- Formal event validation for timestamps and signal values.
+- Compatibility fields for `source_id` and structured `metadata`.
+- Tests for profile normalization, invalid events, metadata loading, and custom scoring.
 - Architecture documentation covering ingestion, normalization, scoring, merging, ranking, and export.
 - Versioned default and review-oriented scoring configurations.
 - Formal event record schema.
-- Scoring calibration guidance.
-- ClipBench integration guidance.
+- ClipBench regression-integration guidance.
 - Input validation and error-handling contract.
-- English-only repository entry point and examples.
-- Runnable JSONL event fixture.
-- Unit smoke test and GitHub Actions validation workflow.
-- Public roadmap issue for real media signal adapters.
 
 ### Changed
 
-- The primary README is now fully English.
-- The MVP documentation now describes deterministic processing boundaries, review requirements, downstream integration, and configuration traceability.
+- Weight profiles are normalized before scoring, allowing any positive proportional values.
+- CLI arguments now override configuration-file selection values.
+- Malformed event records include their JSONL line number in the raised error.
+- The primary README and examples are maintained in English.
 
 ### Known limitations
 
-- The current CLI consumes precomputed event signals rather than raw media.
-- Configuration files are documented but not yet loaded directly by the CLI.
+- The CLI still consumes prepared event signals rather than raw media.
+- Configuration files are loaded directly but are not yet validated against JSON Schema at runtime.
 - Candidate merging retains the strongest score rather than recalculating a duration-weighted score.
 - Rights, privacy, factual accuracy, and delivery policy remain outside the scoring engine.
 
@@ -35,7 +37,7 @@ Initial executable MVP with multi-signal scoring, thresholding, interval merging
 
 ## Maintenance policy
 
-- Every user-visible change must update this changelog.
+- Every behavior change must include tests.
 - New adapters require non-sensitive fixtures.
 - Scoring changes require benchmark comparison through ClipBench.
 - Backward-incompatible event fields require a schema-version increment.
