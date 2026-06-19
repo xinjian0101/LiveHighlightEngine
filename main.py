@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
+from collections import Counter
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -125,6 +127,70 @@ def select(
     return [asdict(item) for item in sorted(merged, key=lambda item: (-item.score, item.start))[:top]]
 
 
+def summarize_results(items: list[dict]) -> dict[str, Any]:
+    reason_counts = Counter(reason for item in items for reason in item.get("reasons", []))
+    total_duration = sum(max(0.0, float(item["end"]) - float(item["start"])) for item in items)
+    average_score = sum(float(item["score"]) for item in items) / len(items) if items else 0.0
+    return {
+        "count": len(items),
+        "total_duration_seconds": round(total_duration, 4),
+        "average_score": round(average_score, 4),
+        "reason_counts": dict(sorted(reason_counts.items())),
+    }
+
+
+def infer_output_format(path: str, requested: str | None = None) -> str:
+    if requested:
+        return requested
+    suffix = Path(path).suffix.lower()
+    return {".csv": "csv", ".md": "markdown", ".markdown": "markdown"}.get(suffix, "json")
+
+
+def write_results(items: list[dict], path: str, output_format: str | None = None) -> None:
+    output_format = infer_output_format(path, output_format)
+    target = Path(path)
+    if output_format == "json":
+        target.write_text(
+            json.dumps({"summary": summarize_results(items), "highlights": items}, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return
+    if output_format == "csv":
+        with target.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=("start", "end", "duration", "score", "reasons", "text"))
+            writer.writeheader()
+            for item in items:
+                writer.writerow({
+                    "start": item["start"],
+                    "end": item["end"],
+                    "duration": round(float(item["end"]) - float(item["start"]), 4),
+                    "score": item["score"],
+                    "reasons": ";".join(item.get("reasons", [])),
+                    "text": item.get("text", ""),
+                })
+        return
+    if output_format == "markdown":
+        summary = summarize_results(items)
+        lines = [
+            "# Highlight Report",
+            "",
+            f"- Candidates: {summary['count']}",
+            f"- Total duration: {summary['total_duration_seconds']} seconds",
+            f"- Average score: {summary['average_score']}",
+            "",
+            "| Start | End | Duration | Score | Reasons | Context |",
+            "|---:|---:|---:|---:|---|---|",
+        ]
+        for item in items:
+            text = str(item.get("text", "")).replace("|", "\\|").replace("\n", " ")
+            reasons = ", ".join(item.get("reasons", []))
+            duration = round(float(item["end"]) - float(item["start"]), 4)
+            lines.append(f"| {item['start']} | {item['end']} | {duration} | {item['score']} | {reasons} | {text} |")
+        target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return
+    raise ValueError(f"Unsupported output format: {output_format}")
+
+
 def load_events(path: str) -> list[Event]:
     events: list[Event] = []
     with Path(path).open("r", encoding="utf-8") as handle:
@@ -147,6 +213,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Score live-stream highlight intervals.")
     parser.add_argument("events")
     parser.add_argument("-o", "--output", default="highlights.json")
+    parser.add_argument("--format", choices=("json", "csv", "markdown"))
     parser.add_argument("--config")
     parser.add_argument("--threshold", type=float)
     parser.add_argument("--gap", type=float)
@@ -162,7 +229,7 @@ def main() -> None:
     reason_threshold = float(config.get("reason_threshold", 0.7))
 
     result = select(load_events(args.events), threshold, gap, top, weights, reason_threshold)
-    Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_results(result, args.output, args.format)
     print(f"Wrote {len(result)} highlights to {args.output}")
 
 
