@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project overview
+    url: https://github.com/xinjian0101/LiveHighlightEngine/blob/main/ABOUT.md
+    about: Read the mission, architecture, maturity, and project boundaries before opening an issue.
+  - name: Scoring and integration guides
+    url: https://github.com/xinjian0101/LiveHighlightEngine/tree/main/docs
+    about: Review scoring, architecture, error-handling, and benchmark documentation.
