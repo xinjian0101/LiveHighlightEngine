@@ -1,0 +1,71 @@
+name: Package AutoClip CN Multi
+
+on:
+  push:
+    branches:
+      - autoclip-cn-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout builder
+        uses: actions/checkout@v4
+
+      - name: Clone pinned AutoClip source
+        run: |
+          git clone https://github.com/zhouxiaoka/autoclip.git autoclip-cn
+          cd autoclip-cn
+          git checkout 17100c05252b9a947ea1a857f8d0ea4f3af2317b
+          rm -rf .git
+
+      - name: Apply CN multi-platform overlay
+        run: |
+          cp -a autoclip_cn_overlay/. autoclip-cn/
+          python tools/apply_autoclip_cn_patch.py autoclip-cn
+
+      - name: Validate Python additions
+        run: |
+          python -m py_compile \
+            autoclip-cn/backend/core/platform_profiles.py \
+            autoclip-cn/backend/services/local_highlight_engine.py \
+            autoclip-cn/backend/services/danmaku_parser.py \
+            autoclip-cn/backend/utils/multiplatform_export.py \
+            autoclip-cn/backend/api/v1/local_clips.py
+          PYTHONPATH=autoclip-cn python - <<'PY'
+          from backend.core.platform_profiles import public_configuration
+          from backend.services.local_highlight_engine import SignalEvent, select_highlights
+          config = public_configuration()
+          assert config['clip_count_options'] == [5, 10, 15, 20, 25, 30]
+          result = select_highlights([
+              SignalEvent(start=0, end=20, danmaku=0.95, keyword=0.90),
+              SignalEvent(start=60, end=90, danmaku=0.1),
+          ], threshold=0.4, max_results=5)
+          assert len(result) == 1
+          print('AutoClip CN validation passed')
+          PY
+
+      - name: Add package information
+        run: |
+          cat > autoclip-cn/下载说明.txt <<'TXT'
+          AutoClip CN Multi
+
+          本压缩包直接基于 zhouxiaoka/autoclip 的固定提交改造。
+          新增页面：#/local-clips
+          新增文档：docs/AUTOCLIP_CN_MULTI_PLATFORM.md
+
+          当前可直接运行：纯净版 clean.mp4 + B站XML/JSON/JSONL/CSV弹幕文件。
+          OCR视频通道保留界面和接口，OCR事件提取仍为后续迭代项。
+          TXT
+
+      - name: Upload complete source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoClip-CN-Multi-complete-source
+          path: autoclip-cn
+          if-no-files-found: error
+          retention-days: 7
