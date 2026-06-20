@@ -1,0 +1,74 @@
+name: Bug report
+description: Report a reproducible scoring, validation, merge, or export defect
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve LiveHighlightEngine. Use synthetic or non-sensitive event data.
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      placeholder: Commit SHA or release tag
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - JSONL event loading
+        - Configuration loading
+        - Scoring
+        - Interval merging
+        - Ranking
+        - JSON export
+        - CSV export
+        - Markdown export
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Minimal synthetic input
+      description: Provide the smallest event/config example that reproduces the problem.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction command and steps
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and error output
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS and Python version
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I removed private media, credentials, and personal information.
+          required: true
+        - label: I tested the latest main branch or identified the exact commit.
+          required: true
