@@ -1,120 +1,151 @@
+<div align="center">
+
 # LiveHighlightEngine
 
-A local-first highlight candidate engine for long live-stream recordings. The project combines normalized audio, audience-reaction, OCR, and keyword signals into reviewable time intervals that can be ranked, inspected, and passed to downstream editing tools.
+**Explainable, local-first highlight candidate ranking for long recordings.**
 
-> Status: lightweight MVP and algorithm prototype. It does not call paid APIs, upload source video, or execute media editing commands.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-2ea44f)](LICENSE)
+[![Processing](https://img.shields.io/badge/Processing-Local--first-6f42c1)](ABOUT.md)
+[![Status](https://img.shields.io/badge/Status-Active%20MVP-f59e0b)](MAINTENANCE_TRACE.md)
 
-## Use cases
+[Quick start](#quick-start) · [Capabilities](#capability-matrix) · [Examples](examples/events.jsonl) · [Architecture](docs/ARCHITECTURE.md) · [About](ABOUT.md) · [Contributing](CONTRIBUTING.md)
 
-- Initial highlight screening for multi-hour live-stream recordings
-- Candidate extraction from gaming, commerce, interviews, sports, and talk content
-- Experiments that combine audience-reaction peaks, keyword hits, OCR changes, and audio intensity
-- Structured candidate delivery to a human editing workstation
-- Regression evaluation with ClipBench
+</div>
 
-## Current capabilities
+---
 
-- Weighted scoring across `audio`, `danmaku`, `ocr`, and `keyword` signals
-- Optional `text` context for human review
-- Merging of adjacent or overlapping candidate intervals
-- Threshold-based filtering
-- Score-based ranking with a configurable result limit
-- JSON output containing timing, score, trigger reasons, and context
-- Fully local execution with no mandatory third-party dependency
+LiveHighlightEngine turns prepared audio, audience-message, OCR, and keyword signals into ranked, reviewable time intervals. It is designed for editors and developers who need deterministic candidate selection without uploading source media or calling paid APIs.
+
+> [!IMPORTANT]
+> The output is a review queue, not a finished edit. Human approval remains required for context, rights, privacy, continuity, and publication decisions.
+
+## At a glance
+
+| Area | Current support |
+|---|---|
+| Input | JSONL event windows |
+| Signals | Audio, audience messages, OCR, keywords |
+| Ranking | Configurable weighted scoring |
+| Selection | Threshold, merge gap, result limit |
+| Exports | JSON, CSV, Markdown |
+| Evaluation | ClipBench integration |
+| Runtime | Python standard library, local execution |
 
 ## Quick start
 
-### Requirements
-
-- Python 3.10 or newer
-- No mandatory third-party package
-
-### Run
-
 ```bash
-python main.py examples/events.jsonl --threshold 0.45 --top 10 -o highlights.json
+python main.py examples/events.jsonl \
+  --config configs/default.json \
+  --threshold 0.45 \
+  --top 10 \
+  --format markdown \
+  -o highlights.md
 ```
 
-### Test
+Run the test suite:
 
 ```bash
 python -m unittest -v
 ```
 
-## Input format
+## Capability matrix
 
-The input is JSONL: one event or candidate window per line.
+| Capability | Status | Notes |
+|---|---:|---|
+| Weighted multi-signal scoring | ✅ | Profiles are loaded from JSON |
+| Event validation | ✅ | Rejects invalid and non-finite timestamps |
+| Adjacent interval merging | ✅ | Configurable merge gap |
+| Explainable trigger reasons | ✅ | Retained in every result |
+| Multi-format reports | ✅ | JSON, CSV, and Markdown |
+| Raw video decoding | ⏳ | Planned adapter layer |
+| Automatic publishing | ❌ | Intentionally outside scope |
+
+## Input contract
+
+Each JSONL line represents one candidate window:
+
+```json
+{
+  "start": 12.0,
+  "end": 25.0,
+  "audio": 0.62,
+  "danmaku": 0.91,
+  "ocr": 0.35,
+  "keyword": 0.80,
+  "text": "Audience reaction after a key turning point",
+  "source_id": "recording-001",
+  "metadata": {"category": "gaming"}
+}
+```
 
 | Field | Type | Required | Description |
 |---|---|---:|---|
-| `start` | number | yes | interval start in seconds |
-| `end` | number | yes | interval end in seconds |
-| `audio` | number | no | normalized audio intensity or reaction signal |
-| `danmaku` | number | no | normalized audience-message density signal |
-| `ocr` | number | no | normalized OCR event signal |
-| `keyword` | number | no | normalized keyword-match signal |
-| `text` | string | no | short context used during human review |
+| `start` | number | yes | Start time in seconds |
+| `end` | number | yes | End time in seconds |
+| `audio` | number | no | Normalized audio signal |
+| `danmaku` | number | no | Normalized audience-message signal |
+| `ocr` | number | no | Normalized OCR signal |
+| `keyword` | number | no | Normalized keyword signal |
+| `text` | string | no | Human-review context |
+| `source_id` | string | no | Source recording identifier |
+| `metadata` | object | no | Adapter-specific review metadata |
 
-Example:
+## Output formats
 
-```json
-{"start":12.0,"end":25.0,"audio":0.62,"danmaku":0.91,"ocr":0.35,"keyword":0.80,"text":"Audience reaction after a key turning point"}
+```bash
+python main.py examples/events.jsonl --format json -o report.json
+python main.py examples/events.jsonl --format csv -o report.csv
+python main.py examples/events.jsonl --format markdown -o report.md
 ```
 
-## Output example
-
-```json
-[
-  {
-    "start": 12.0,
-    "end": 25.0,
-    "score": 0.84,
-    "reasons": ["danmaku", "keyword"],
-    "text": "Audience reaction after a key turning point"
-  }
-]
-```
-
-The output is a candidate list, not a finished edit. Review context, rights, privacy, continuity, and platform requirements before publishing.
+Reports include candidate count, total selected duration, average score, reason counts, timing, score, reasons, and review context.
 
 ## Recommended workflow
 
-1. Generate time-window events from media, chat, transcript, or OCR modules.
-2. Normalize signals to a consistent range.
-3. Run scoring with a versioned configuration.
-4. Review duplicates, incomplete context, and false peaks.
-5. Pass approved intervals to an editor or a FlowFFmpeg workflow.
-6. Evaluate predictions against reviewed ground truth with ClipBench.
+```text
+signal adapters
+      ↓
+validated JSONL events
+      ↓
+versioned scoring profile
+      ↓
+threshold + merge + ranking
+      ↓
+human review
+      ↓
+ClipBench evaluation / FlowFFmpeg export
+```
 
-## Design principles
+## Repository map
 
-- **Local first**: source media does not need to leave the machine.
-- **Explainable**: results retain trigger signals and review context.
-- **Reproducible**: fixed input and configuration should produce stable output.
-- **Composable**: candidate selection is separate from playback and editing.
-- **Human controlled**: the engine narrows the search space; people make publication decisions.
+| Path | Purpose |
+|---|---|
+| `main.py` | CLI, scoring, merging, and exports |
+| `configs/` | Versioned scoring profiles |
+| `schema/` | Event contract |
+| `examples/` | Synthetic input fixtures |
+| `docs/` | Architecture, scoring, and integration guides |
+| `test_*.py` | Functional and export regression tests |
+| `ABOUT.md` | Mission, maturity, boundaries, and governance |
 
-## Known limitations
+## Project boundaries
 
-- The scoring model is rule-based rather than a generally trained model.
-- Poor input signals can create false peaks.
-- The tool does not assess copyright, privacy, factual accuracy, or platform policy.
-- It does not read raw video or execute FFmpeg.
-- Very large recordings should use segmented preprocessing.
+- No source-video upload
+- No hidden network request
+- No automatic FFmpeg execution
+- No rights or policy determination
+- No claim that rule-based scoring is universally optimal
 
-## Documentation
+## Project documentation
 
+- [About the project](ABOUT.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Scoring Guide](docs/SCORING_GUIDE.md)
-- [Benchmark Integration](docs/BENCHMARK_INTEGRATION.md)
-- [Error Handling](docs/ERROR_HANDLING.md)
-- [Contribution Guide](CONTRIBUTING.md)
-- [Maintenance Trace](MAINTENANCE_TRACE.md)
-
-## Related projects
-
-- **ClipBench** evaluates temporal predictions with precision, recall, F1, IoU, and boundary error.
-- **FlowFFmpeg** compiles approved media workflows into inspectable FFmpeg commands.
+- [Scoring guide](docs/SCORING_GUIDE.md)
+- [ClipBench integration](docs/BENCHMARK_INTEGRATION.md)
+- [Error handling](docs/ERROR_HANDLING.md)
+- [Maintenance trace](MAINTENANCE_TRACE.md)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
