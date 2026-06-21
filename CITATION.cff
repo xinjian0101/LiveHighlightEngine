@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use LiveHighlightEngine, cite this repository and the exact commit used."
+title: "LiveHighlightEngine"
+type: software
+authors:
+  - name: "xinjian0101"
+repository-code: "https://github.com/xinjian0101/LiveHighlightEngine"
+url: "https://github.com/xinjian0101/LiveHighlightEngine/blob/main/ABOUT.md"
+license: MIT
+keywords:
+  - highlight detection
+  - video analysis
+  - live stream
+  - local-first
+  - explainable scoring
+abstract: "A local-first engine that ranks explainable highlight candidates from normalized audio, audience-message, OCR, and keyword signals."
