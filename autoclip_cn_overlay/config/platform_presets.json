@@ -1,0 +1,10 @@
+{
+  "platforms": {
+    "bilibili": {"resolution": "1920x1080", "aspect_ratio": "16:9", "fps": 30},
+    "douyin": {"resolution": "1080x1920", "aspect_ratio": "9:16", "fps": 30},
+    "tiktok": {"resolution": "1080x1920", "aspect_ratio": "9:16", "fps": 30}
+  },
+  "clip_count_options": [5, 10, 15, 20, 25, 30],
+  "default_danmaku_delay_seconds": 10,
+  "export_source_required": "clean.mp4"
+}
