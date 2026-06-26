@@ -137,6 +137,14 @@ ClipBench evaluation / FlowFFmpeg export
 - No rights or policy determination
 - No claim that rule-based scoring is universally optimal
 
+## Community & Support
+
+- 📖 Read the [About](ABOUT.md) before opening issues
+- 🐛 Bug reports: use Issue templates
+- 💡 Feature requests: describe workflow + acceptance criteria
+- 🔐 Security issues: see SECURITY.md
+- 📦 Releases: versioned changes only
+
 ## Project documentation
 
 - [About the project](ABOUT.md)
